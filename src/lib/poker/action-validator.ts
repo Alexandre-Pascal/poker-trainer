@@ -5,6 +5,10 @@ import {
   resolveCorrectPreflopActions,
 } from "./ranges";
 import {
+  getSbBtnPushFoldRange,
+  isHuMaxPressurePushSpot,
+} from "./ranges/push-fold";
+import {
   isFacingVillainBet,
   sanitizeActionsForFacingBet,
   validatePostflopAction,
@@ -12,6 +16,7 @@ import {
 import {
   explainPostflop,
   explainPotCommitted,
+  explainHuMaxPressurePush,
   explainPreflop,
   explainWrongAction,
 } from "./rule-explainer";
@@ -76,6 +81,23 @@ export function validateAction(
     };
   }
 
+  if (isHuMaxPressurePushSpot(scenario)) {
+    const range = getSbBtnPushFoldRange(scenario)!;
+    const inRange = isHandInRange(hand, range);
+    const correctActions: UserAction[] = inRange ? ["allin"] : ["fold"];
+    const explanation = explainHuMaxPressurePush(hand, inRange);
+    const isCorrect = actionsMatch(userAction, correctActions);
+
+    return {
+      isCorrect,
+      correctActions,
+      explanation: isCorrect
+        ? explanation
+        : explainWrongAction(scenario, userAction, correctActions, explanation),
+      ruleRef: "push_hu_max_pressure",
+    };
+  }
+
   const rule = findRangeRule(
     scenario.effectivePosition,
     scenario.strategyMode,
@@ -135,6 +157,11 @@ export function resolveCorrectActions(scenario: Scenario): UserAction[] {
 
   if (isPotCommittedPreflopSpot(scenario)) {
     return resolvePotCommittedCorrectActions(hand);
+  }
+
+  if (isHuMaxPressurePushSpot(scenario)) {
+    const range = getSbBtnPushFoldRange(scenario)!;
+    return isHandInRange(hand, range) ? ["allin"] : ["fold"];
   }
 
   const rule = findRangeRule(

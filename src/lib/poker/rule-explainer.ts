@@ -2,6 +2,7 @@ import { ParsedHand, Scenario, UserAction } from "./types";
 import { handToNotation, isHandInRange } from "./hand-matcher";
 import { zoneEmoji, zoneLabel } from "./stack-zone";
 import { findRangeRule } from "./ranges";
+import { isHuMaxPressurePushSpot } from "./ranges/push-fold";
 import type { RangeRule } from "./types";
 import { PostflopValidation } from "./postflop/postflop-validator";
 import { formatPositionLabel } from "./effective-position";
@@ -17,6 +18,16 @@ const ACTION_LABELS: Record<UserAction, string> = {
   raise_4bb: "Raise 4 BB",
   raise_6bb: "Raise 6 BB",
 };
+
+export function explainHuMaxPressurePush(
+  hand: ParsedHand,
+  inRange: boolean
+): string {
+  if (inRange) {
+    return "En Heads-Up, la pression doit être maximale. Avec cette main, tu as suffisamment d'équité pour faire Tapis et voler la blinde. Action correcte : All-in.";
+  }
+  return "En Heads-Up, tu dois appliquer une pression maximale (Push 80% des mains). Cependant, ta main est trop faible et fait partie des 20% de poubelles à jeter. Action correcte : Fold.";
+}
 
 export function explainPotCommitted(
   scenario: Scenario,
@@ -50,8 +61,8 @@ export function explainPreflop(
     scenario.playerCount
   );
 
-  if (scenario.strategyMode === "hu_survival") {
-    return `Avec ${scenario.stackBB} BB en ${pos} (${zone}), en Heads-Up survie tu dois être ultra-agressif. Push quasi systématique en premier à parler. Ta main ${handStr} : action correcte → ${actions}.`;
+  if (isHuMaxPressurePushSpot(scenario)) {
+    return explainHuMaxPressurePush(hand, inRange);
   }
 
   if (scenario.strategyMode === "wide_push") {

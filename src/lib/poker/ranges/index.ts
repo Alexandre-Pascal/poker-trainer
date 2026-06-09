@@ -15,6 +15,10 @@ import {
   PUSH_SB,
   WIDE_PUSH,
 } from "./data";
+import {
+  PUSH_HU_MAX_PRESSURE,
+  PUSH_SB_3MAX,
+} from "./push-fold";
 
 function lastVillainAction(history: ActionEvent[]): ActionEvent | null {
   for (let i = history.length - 1; i >= 0; i--) {
@@ -147,12 +151,12 @@ export const RANGE_RULES: RangeRule[] = [
     situationId: "push_sb",
     position: "SB",
     strategyMode: "push_fold",
-    matchActions: (h) => btnFolded(h) || h.length === 0,
+    matchActions: (h, pc) => pc === "3max" && btnFolded(h),
     inRangeActions: ["allin"],
     outOfRangeActions: ["fold"],
-    ranges: PUSH_SB,
+    ranges: PUSH_SB_3MAX,
     ruleRef: "push_sb",
-    description: "Push or Fold en SB quand le bouton se couche (≤10 BB).",
+    description: "Push or Fold en SB quand le bouton se couche (≤10 BB, 3-Max).",
   },
   {
     situationId: "bb_defense_allin",
@@ -169,23 +173,49 @@ export const RANGE_RULES: RangeRule[] = [
     situationId: "wide_push",
     position: "SB",
     strategyMode: "wide_push",
-    matchActions: (h) => h.filter((a) => a.actor !== "hero").length === 0,
+    matchActions: (h, pc) =>
+      pc === "3max" && btnFolded(h),
     inRangeActions: ["allin"],
     outOfRangeActions: ["fold"],
-    ranges: WIDE_PUSH,
+    ranges: PUSH_SB_3MAX,
     ruleRef: "wide_push",
-    description: "Push élargi en premier à parler (≤12 BB).",
+    description: "Push or Fold en SB 3-Max quand le bouton se couche (≤12 BB).",
   },
   {
     situationId: "hu_survival_push",
     position: "SB",
     strategyMode: "hu_survival",
-    matchActions: (h) => h.filter((a) => a.actor !== "hero").length === 0,
+    matchActions: (h, pc) =>
+      pc === "headsUp" && h.filter((a) => a.actor !== "hero").length === 0,
     inRangeActions: ["allin"],
     outOfRangeActions: ["fold"],
-    ranges: ["22+", "A2o+", "A2s+", "K2o+", "K2s+", "Q2o+", "Q2s+", "J2o+", "J2s+", "T2o+", "T2s+", "92o+", "92s+", "82o+", "82s+", "72o+", "72s+"],
-    ruleRef: "hu_survival_push",
-    description: "Agressivité maximale HU <10 BB — push quasi systématique.",
+    ranges: PUSH_HU_MAX_PRESSURE,
+    ruleRef: "push_hu_max_pressure",
+    description: "Pression maximale HU (top 80 % des mains) en premier à parler (≤12 BB).",
+  },
+  {
+    situationId: "push_hu_max_pressure",
+    position: "SB",
+    strategyMode: "push_fold",
+    matchActions: (h, pc) =>
+      pc === "headsUp" && h.filter((a) => a.actor !== "hero").length === 0,
+    inRangeActions: ["allin"],
+    outOfRangeActions: ["fold"],
+    ranges: PUSH_HU_MAX_PRESSURE,
+    ruleRef: "push_hu_max_pressure",
+    description: "Pression maximale HU (top 80 % des mains) en premier à parler (≤12 BB).",
+  },
+  {
+    situationId: "push_hu_wide",
+    position: "SB",
+    strategyMode: "wide_push",
+    matchActions: (h, pc) =>
+      pc === "headsUp" && h.filter((a) => a.actor !== "hero").length === 0,
+    inRangeActions: ["allin"],
+    outOfRangeActions: ["fold"],
+    ranges: PUSH_HU_MAX_PRESSURE,
+    ruleRef: "push_hu_max_pressure",
+    description: "Pression maximale HU (top 80 % des mains) en premier à parler (≤12 BB).",
   },
 ];
 
@@ -204,10 +234,21 @@ export function findRangeRule(
 
   if (candidates.length === 0) {
     if (strategyMode === "wide_push") {
+      if (playerCount === "headsUp") {
+        return RANGE_RULES.find((r) => r.situationId === "push_hu_wide") ?? null;
+      }
       return RANGE_RULES.find((r) => r.situationId === "wide_push") ?? null;
     }
     if (strategyMode === "hu_survival") {
-      return RANGE_RULES.find((r) => r.situationId === "hu_survival_push") ?? null;
+      return (
+        RANGE_RULES.find((r) => r.situationId === "hu_survival_push") ?? null
+      );
+    }
+    if (strategyMode === "push_fold" && playerCount === "headsUp") {
+      return (
+        RANGE_RULES.find((r) => r.situationId === "push_hu_max_pressure") ??
+        null
+      );
     }
     return null;
   }

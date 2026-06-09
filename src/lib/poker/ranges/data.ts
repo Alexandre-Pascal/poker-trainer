@@ -101,19 +101,7 @@ export const PUSH_BTN = [
   "J8s+",
 ];
 
-export const PUSH_SB = [
-  "22+",
-  "A2o+",
-  "A2s+",
-  "K2o+",
-  "K2s+",
-  "Q2o+",
-  "Q2s+",
-  "J8o+",
-  "J2s+",
-  "T8o+",
-  "T7s+",
-];
+export { PUSH_SB_3MAX as PUSH_SB } from "./push-fold";
 
 export const BB_DEFENSE_VS_ALLIN = ["55+", "A9o+", "A2s+", "KJo+", "KTs+"];
 
