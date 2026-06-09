@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BookOpen } from "lucide-react";
 import { generateScenario } from "@/lib/poker/scenario-generator";
 import { validateAction } from "@/lib/poker/action-validator";
 import { Scenario, UserAction } from "@/lib/poker/types";
@@ -53,6 +55,13 @@ export default function Home() {
         <header className="text-center">
           <h1 className="text-2xl font-bold text-white">Spin & Go Trainer</h1>
           <p className="text-sm text-slate-400">3-Max Hyper-Turbo — Stratégie mécanique</p>
+          <Link
+            href="/ranges"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300"
+          >
+            <BookOpen className="size-4" />
+            Voir toutes les ranges
+          </Link>
         </header>
 
         <StatsPanel stats={stats} onReset={reset} />
