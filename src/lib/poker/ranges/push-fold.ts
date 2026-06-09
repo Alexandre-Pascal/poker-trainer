@@ -16,6 +16,12 @@ export const PUSH_SB_3MAX = [
   "T7s+",
 ];
 
+/**
+ * BB en zone courte qui isole par tapis (vs limp) ou re-jam (vs mini-relance).
+ * Même largeur que le push SB 3-Max — voler / punir les limps en tapis court.
+ */
+export const BB_PUSH_SHORT_3MAX = PUSH_SB_3MAX;
+
 /** Catégorie B — Heads-Up BTN/SB, pression maximale top 80 % (≤ 12 BB). */
 export const PUSH_HU_MAX_PRESSURE = [
   "22+",
@@ -79,4 +85,14 @@ export function getSbBtnPushFoldRange(
   }
 
   return null;
+}
+
+/** Range de tapis agressif pour la BB en zone courte (iso-shove / re-jam). */
+export function getBbAggressionPushRange(
+  scenario: Pick<Scenario, "playerCount">
+): string[] {
+  if (scenario.playerCount === "headsUp") {
+    return PUSH_HU_MAX_PRESSURE;
+  }
+  return BB_PUSH_SHORT_3MAX;
 }

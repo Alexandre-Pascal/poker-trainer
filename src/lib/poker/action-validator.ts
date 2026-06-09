@@ -15,14 +15,20 @@ import {
 } from "./postflop/postflop-validator";
 import {
   explainPostflop,
+  explainBbRejam,
+  explainBbShoveOverLimp,
   explainPotCommitted,
   explainHuMaxPressurePush,
   explainPreflop,
   explainWrongAction,
 } from "./rule-explainer";
 import {
-  isPotCommittedPreflopSpot,
-  resolvePotCommittedCorrectActions,
+  isBbShortStackRejamSpot,
+  isBbShortStackShoveOverLimpSpot,
+  isSbShortStackPotCommittedSpot,
+  resolveBbRejamActions,
+  resolveBbShoveOverLimpActions,
+  resolveSbPotCommittedActions,
 } from "./pot-committed";
 
 function actionsMatch(user: UserAction, correct: UserAction[]): boolean {
@@ -65,8 +71,40 @@ export function validateAction(
     scenario.holeCards[0].suit === scenario.holeCards[1].suit
   );
 
-  if (isPotCommittedPreflopSpot(scenario)) {
-    const correctActions = resolvePotCommittedCorrectActions(hand);
+  if (isBbShortStackShoveOverLimpSpot(scenario)) {
+    const correctActions = resolveBbShoveOverLimpActions(hand, scenario);
+    const inRange = correctActions.includes("allin");
+    const explanation = explainBbShoveOverLimp(scenario, hand, inRange);
+    const isCorrect = actionsMatch(userAction, correctActions);
+
+    return {
+      isCorrect,
+      correctActions,
+      explanation: isCorrect
+        ? explanation
+        : explainWrongAction(scenario, userAction, correctActions, explanation),
+      ruleRef: "bb_shove_vs_limp_short",
+    };
+  }
+
+  if (isBbShortStackRejamSpot(scenario)) {
+    const correctActions = resolveBbRejamActions(hand, scenario);
+    const inRange = correctActions.includes("allin");
+    const explanation = explainBbRejam(scenario, hand, inRange);
+    const isCorrect = actionsMatch(userAction, correctActions);
+
+    return {
+      isCorrect,
+      correctActions,
+      explanation: isCorrect
+        ? explanation
+        : explainWrongAction(scenario, userAction, correctActions, explanation),
+      ruleRef: "bb_rejam_short",
+    };
+  }
+
+  if (isSbShortStackPotCommittedSpot(scenario)) {
+    const correctActions = resolveSbPotCommittedActions(hand, scenario);
     const inRange = correctActions.includes("allin");
     const explanation = explainPotCommitted(scenario, hand, inRange);
     const isCorrect = actionsMatch(userAction, correctActions);
@@ -77,7 +115,7 @@ export function validateAction(
       explanation: isCorrect
         ? explanation
         : explainWrongAction(scenario, userAction, correctActions, explanation),
-      ruleRef: "pot_committed_defense",
+      ruleRef: "sb_pot_committed",
     };
   }
 
@@ -155,8 +193,16 @@ export function resolveCorrectActions(scenario: Scenario): UserAction[] {
     scenario.holeCards[0].suit === scenario.holeCards[1].suit
   );
 
-  if (isPotCommittedPreflopSpot(scenario)) {
-    return resolvePotCommittedCorrectActions(hand);
+  if (isBbShortStackShoveOverLimpSpot(scenario)) {
+    return resolveBbShoveOverLimpActions(hand, scenario);
+  }
+
+  if (isBbShortStackRejamSpot(scenario)) {
+    return resolveBbRejamActions(hand, scenario);
+  }
+
+  if (isSbShortStackPotCommittedSpot(scenario)) {
+    return resolveSbPotCommittedActions(hand, scenario);
   }
 
   if (isHuMaxPressurePushSpot(scenario)) {

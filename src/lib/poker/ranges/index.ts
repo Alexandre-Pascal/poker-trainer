@@ -148,6 +148,18 @@ export const RANGE_RULES: RangeRule[] = [
     description: "Push or Fold depuis le bouton (≤10 BB).",
   },
   {
+    situationId: "push_btn_wide",
+    position: "BTN",
+    strategyMode: "wide_push",
+    matchActions: (h, pc) =>
+      pc === "3max" && h.filter((a) => a.actor !== "hero").length === 0,
+    inRangeActions: ["allin"],
+    outOfRangeActions: ["fold"],
+    ranges: WIDE_PUSH,
+    ruleRef: "push_btn_wide",
+    description: "Push élargi depuis le bouton 3-Max (11–12 BB).",
+  },
+  {
     situationId: "push_sb",
     position: "SB",
     strategyMode: "push_fold",
@@ -167,7 +179,18 @@ export const RANGE_RULES: RangeRule[] = [
     outOfRangeActions: ["fold"],
     ranges: BB_DEFENSE_VS_ALLIN,
     ruleRef: "bb_defense_allin",
-    description: "Défense BB face à un tapis adverse (<10 BB push range).",
+    description: "Défense BB face à un tapis adverse (zone courte).",
+  },
+  {
+    situationId: "sb_defense_allin",
+    position: "SB",
+    strategyMode: "push_fold",
+    matchActions: (h, pc) => pc === "3max" && facingAllin(h),
+    inRangeActions: ["call"],
+    outOfRangeActions: ["fold"],
+    ranges: BB_DEFENSE_VS_ALLIN,
+    ruleRef: "sb_defense_allin",
+    description: "Défense SB face à un tapis du bouton (zone courte).",
   },
   {
     situationId: "wide_push",
@@ -249,6 +272,14 @@ export function findRangeRule(
         RANGE_RULES.find((r) => r.situationId === "push_hu_max_pressure") ??
         null
       );
+    }
+    if (strategyMode === "push_fold" && playerCount === "3max") {
+      if (effectivePosition === "SB") {
+        return RANGE_RULES.find((r) => r.situationId === "sb_defense_allin") ?? null;
+      }
+      if (effectivePosition === "BB") {
+        return RANGE_RULES.find((r) => r.situationId === "bb_defense_allin") ?? null;
+      }
     }
     return null;
   }

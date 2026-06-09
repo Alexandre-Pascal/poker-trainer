@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { validateAction, resolveCorrectActions } from "@/lib/poker/action-validator";
 import { getAvailableActions } from "@/lib/poker/available-actions";
 import {
-  isPotCommittedPreflopSpot,
+  isBbShortStackRejamSpot,
+  isBbShortStackShoveOverLimpSpot,
 } from "@/lib/poker/pot-committed";
 import { Scenario } from "@/lib/poker/types";
 
@@ -44,7 +45,7 @@ describe("pot-committed preflop", () => {
       { rank: "8", suit: "h" },
       { rank: "8", suit: "d" },
     ]);
-    expect(isPotCommittedPreflopSpot(scenario)).toBe(true);
+    expect(isBbShortStackRejamSpot(scenario)).toBe(true);
   });
 
   it("does not apply in green zone", () => {
@@ -55,19 +56,18 @@ describe("pot-committed preflop", () => {
       ],
       { stackBB: 20, zone: "green", strategyMode: "standard" }
     );
-    expect(isPotCommittedPreflopSpot(scenario)).toBe(false);
+    expect(isBbShortStackRejamSpot(scenario)).toBe(false);
   });
 
-  it("pushes 88 facing recreational mini-raise at 7 BB", () => {
+  it("re-jams 88 facing recreational mini-raise at 7 BB", () => {
     const scenario = potCommittedScenario([
       { rank: "8", suit: "h" },
       { rank: "8", suit: "d" },
     ]);
     const result = validateAction(scenario, "allin");
     expect(result.isCorrect).toBe(true);
-    expect(result.ruleRef).toBe("pot_committed_defense");
-    expect(result.explanation).toContain("Pot-Committed");
-    expect(result.explanation).toContain("range de survie");
+    expect(result.ruleRef).toBe("bb_rejam_short");
+    expect(result.explanation).toContain("re-jam");
   });
 
   it("folds 72o facing recreational mini-raise at 7 BB", () => {
@@ -98,7 +98,7 @@ describe("pot-committed preflop", () => {
     expect(getAvailableActions(scenario)).toEqual(["fold", "allin"]);
   });
 
-  it("applies to BB vs limp in yellow zone", () => {
+  it("BB shoves over limp in yellow zone with KJo", () => {
     const scenario = potCommittedScenario(
       [
         { rank: "K", suit: "h" },
@@ -112,9 +112,28 @@ describe("pot-committed preflop", () => {
         actionHistory: [{ actor: "villain", action: "limp", street: "preflop" }],
       }
     );
-    expect(isPotCommittedPreflopSpot(scenario)).toBe(true);
     const result = validateAction(scenario, "allin");
     expect(result.isCorrect).toBe(true);
-    expect(getAvailableActions(scenario)).toEqual(["fold", "allin"]);
+    expect(result.ruleRef).toBe("bb_shove_vs_limp_short");
+    expect(getAvailableActions(scenario)).toEqual(["check", "allin"]);
+  });
+
+  it("BB checks weak hand over limp in short stack zone", () => {
+    const scenario = potCommittedScenario(
+      [
+        { rank: "7", suit: "h" },
+        { rank: "2", suit: "d" },
+      ],
+      {
+        stackBB: 12,
+        zone: "yellow",
+        isFirstToAct: true,
+        facingAction: "limp",
+        actionHistory: [{ actor: "villain", action: "limp", street: "preflop" }],
+      }
+    );
+    const result = validateAction(scenario, "check");
+    expect(result.isCorrect).toBe(true);
+    expect(resolveCorrectActions(scenario)).toEqual(["check"]);
   });
 });

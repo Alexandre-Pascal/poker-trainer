@@ -9,8 +9,13 @@ import {
   GREEN_SB_COMPLETE,
   GREEN_SB_ISOLATE,
   PUSH_BTN,
+  WIDE_PUSH,
 } from "./data";
-import { PUSH_HU_MAX_PRESSURE, PUSH_SB_3MAX } from "./push-fold";
+import {
+  BB_PUSH_SHORT_3MAX,
+  PUSH_HU_MAX_PRESSURE,
+  PUSH_SB_3MAX,
+} from "./push-fold";
 import type { MatrixLayer } from "./matrix";
 import type { PlayerCount, Position, StackZone } from "../types";
 
@@ -195,6 +200,33 @@ export const RANGE_CATALOG: RangeCatalogEntry[] = [
     rangeText: PUSH_BTN,
   },
   {
+    id: "push-btn-wide",
+    title: "Push BTN élargi",
+    zone: "yellow",
+    zoneLabel: "11–12 BB",
+    playerCount: "3max",
+    position: "BTN",
+    situation: "Premier à parler, zone Push élargi",
+    action: "All-in ou Fold",
+    description: "Push élargi depuis le bouton entre 11 et 12 BB en 3-Max.",
+    layers: [layer("push", WIDE_PUSH)],
+    rangeText: WIDE_PUSH,
+  },
+  {
+    id: "sb-pot-committed",
+    title: "SB vs mini-relance / limp",
+    zone: "mixed",
+    zoneLabel: "≤ 15 BB",
+    playerCount: "3max",
+    position: "SB",
+    situation: "Face à open 2 BB ou limp du BTN (pot-committed)",
+    action: "All-in ou Fold",
+    description:
+      "Pas de call en tapis court — rejoue avec la range push SB ou fold.",
+    layers: [layer("push", PUSH_SB_3MAX)],
+    rangeText: PUSH_SB_3MAX,
+  },
+  {
     id: "push-sb-3max",
     title: "Push SB (BTN fold)",
     zone: "mixed",
@@ -222,16 +254,57 @@ export const RANGE_CATALOG: RangeCatalogEntry[] = [
     rangeText: PUSH_HU_MAX_PRESSURE,
   },
   {
-    id: "bb-defense-allin",
-    title: "BB vs tapis",
+    id: "bb-shove-vs-limp",
+    title: "BB iso-shove vs limp",
     zone: "mixed",
     zoneLabel: "≤ 15 BB",
     playerCount: "both",
     position: "BB",
-    situation: "Face à un tapis adverse (ou pot-committed)",
+    situation: "Adversaire limp (BTN ou SB) — la BB peut isoler par tapis",
+    action: "All-in ou Check",
+    description:
+      "En tapis court, punir les limps récréatifs par un shove large. Mains faibles → check gratuit.",
+    layers: [layer("push", BB_PUSH_SHORT_3MAX)],
+    rangeText: BB_PUSH_SHORT_3MAX,
+  },
+  {
+    id: "bb-rejam-short",
+    title: "BB re-jam vs mini-relance",
+    zone: "mixed",
+    zoneLabel: "≤ 15 BB",
+    playerCount: "both",
+    position: "BB",
+    situation: "Face à un raise 2 BB avec un micro-tapis",
+    action: "All-in ou Fold",
+    description:
+      "L'adversaire est pot-committed — pas de call. Re-joue avec la range push BB ou fold.",
+    layers: [layer("push", BB_PUSH_SHORT_3MAX)],
+    rangeText: BB_PUSH_SHORT_3MAX,
+  },
+  {
+    id: "bb-defense-allin",
+    title: "BB vs tapis adverse",
+    zone: "mixed",
+    zoneLabel: "≤ 15 BB",
+    playerCount: "both",
+    position: "BB",
+    situation: "Face à un tapis adverse (BTN, SB ou Vilain HU)",
     action: "Call ou Fold",
     description:
-      "Range de survie stricte. S'applique aussi face à mini-relance/limp short (pot-committed).",
+      "Range de survie stricte quand l'adversaire fait tapis — Call ou Fold uniquement.",
+    layers: [layer("defend", BB_DEFENSE_VS_ALLIN)],
+    rangeText: BB_DEFENSE_VS_ALLIN,
+  },
+  {
+    id: "sb-defense-allin",
+    title: "SB vs tapis BTN",
+    zone: "mixed",
+    zoneLabel: "≤ 15 BB",
+    playerCount: "3max",
+    position: "SB",
+    situation: "Le bouton fait tapis",
+    action: "Call ou Fold",
+    description: "Défense SB en zone courte face à un shove du bouton.",
     layers: [layer("defend", BB_DEFENSE_VS_ALLIN)],
     rangeText: BB_DEFENSE_VS_ALLIN,
   },
@@ -243,10 +316,17 @@ export function getCatalogBySection(sectionId: string): RangeCatalogEntry[] {
       return RANGE_CATALOG.filter((e) => e.zone === "green");
     case "short":
       return RANGE_CATALOG.filter(
-        (e) => e.id.startsWith("push-")
+        (e) =>
+          e.id.startsWith("push-") ||
+          e.id === "sb-pot-committed" ||
+          e.id === "bb-shove-vs-limp" ||
+          e.id === "bb-rejam-short"
       );
     case "defense":
-      return RANGE_CATALOG.filter((e) => e.id.startsWith("bb-"));
+      return RANGE_CATALOG.filter(
+        (e) =>
+          e.id === "bb-defense-allin" || e.id.startsWith("sb-defense")
+      );
     default:
       return RANGE_CATALOG;
   }

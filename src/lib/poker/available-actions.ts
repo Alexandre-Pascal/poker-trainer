@@ -1,6 +1,10 @@
 import { Scenario, UserAction } from "./types";
 import { isPushFoldZone } from "./stack-zone";
-import { isPotCommittedPreflopSpot } from "./pot-committed";
+import {
+  isBbShortStackRejamSpot,
+  isBbShortStackShoveOverLimpSpot,
+  isSbShortStackPotCommittedSpot,
+} from "./pot-committed";
 
 export function getAvailableActions(scenario: Scenario): UserAction[] {
   const { street, facingAction, isFirstToAct, stackBB, callAmountBB } = scenario;
@@ -9,7 +13,11 @@ export function getAvailableActions(scenario: Scenario): UserAction[] {
     return ["fold", "call"];
   }
 
-  if (isPotCommittedPreflopSpot(scenario)) {
+  if (isBbShortStackShoveOverLimpSpot(scenario)) {
+    return ["check", "allin"];
+  }
+
+  if (isBbShortStackRejamSpot(scenario) || isSbShortStackPotCommittedSpot(scenario)) {
     return ["fold", "allin"];
   }
 

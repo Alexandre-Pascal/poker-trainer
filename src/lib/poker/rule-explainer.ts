@@ -29,6 +29,31 @@ export function explainHuMaxPressurePush(
   return "En Heads-Up, tu dois appliquer une pression maximale (Push 80% des mains). Cependant, ta main est trop faible et fait partie des 20% de poubelles à jeter. Action correcte : Fold.";
 }
 
+export function explainBbShoveOverLimp(
+  scenario: Scenario,
+  hand: ParsedHand,
+  inRange: boolean
+): string {
+  const handStr = handToNotation(hand);
+  if (inRange) {
+    return `En BB avec un tapis court, un limp adverse est une invitation à isoler par tapis et voler le pot. ${handStr} est dans ta range de push BB — fais tapis pour punir le limp. Action correcte : All-in.`;
+  }
+  return `En BB avec un tapis court face à un limp, tu peux checker gratuitement avec les mains trop faibles pour isoler. ${handStr} n'est pas dans la range de push — vois le flop sans investir. Action correcte : Check.`;
+}
+
+export function explainBbRejam(
+  scenario: Scenario,
+  hand: ParsedHand,
+  inRange: boolean
+): string {
+  const handStr = handToNotation(hand);
+  const actions = inRange ? "All-in" : "Fold";
+  const rangeHint = inRange
+    ? `${handStr} est dans ta range de re-jam BB (push short stack).`
+    : `${handStr} n'est pas assez forte pour rejouer en tapis.`;
+  return `En BB avec un micro-tapis, face à une mini-relance adverse l'adversaire est pot-committed. Pas de call — rejoue ou fold. ${rangeHint} Action correcte → ${actions}.`;
+}
+
 export function explainPotCommitted(
   scenario: Scenario,
   hand: ParsedHand,
@@ -37,10 +62,9 @@ export function explainPotCommitted(
   const handStr = handToNotation(hand);
   const actions = inRange ? "All-in" : "Fold";
   const rangeHint = inRange
-    ? `${handStr} est dans la range de survie (55+, A9o+, A2s+, KJo+, KTs+).`
-    : `${handStr} n'est pas dans la range de survie.`;
-
-  return `L'adversaire fait une petite relance avec un micro-tapis, il est engagé dans le pot (Pot-Committed). Traite cela comme un Tapis direct. ${rangeHint} Action : All-in avec ta range de survie, ou Fold. Action correcte → ${actions}.`;
+    ? `${handStr} est dans ta range de push short stack.`
+    : `${handStr} n'est pas assez forte pour rejouer en tapis.`;
+  return `En zone courte, face à une mini-relance ou un limp adverse, l'adversaire est pot-committed. Pas de call possible — rejoue ou fold. ${rangeHint} Action correcte → ${actions}.`;
 }
 
 export function explainPreflop(
