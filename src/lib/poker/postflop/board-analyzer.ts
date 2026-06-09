@@ -67,6 +67,38 @@ export function hasTopPair(hole: [Card, Card], board: Card[]): boolean {
   return getTopPairKickerValue(hole, board) !== null;
 }
 
+export type BoardPairType = "top" | "middle" | "bottom" | null;
+
+/** Type de paire formée entre une hole card et le board (hors brelans+). */
+export function getBoardPairType(
+  hole: [Card, Card],
+  board: Card[]
+): BoardPairType {
+  if (board.length === 0) return null;
+
+  const boardRankValues = [
+    ...new Set(board.map((c) => RANK_VALUES[c.rank])),
+  ].sort((a, b) => b - a);
+
+  const pairedHoleRanks = hole
+    .filter((c) => board.some((b) => b.rank === c.rank))
+    .map((c) => RANK_VALUES[c.rank]);
+
+  if (pairedHoleRanks.length === 0) return null;
+
+  const pairValue = Math.max(...pairedHoleRanks);
+  const highest = boardRankValues[0];
+  const lowest = boardRankValues[boardRankValues.length - 1];
+
+  if (pairValue === highest) return "top";
+  if (pairValue === lowest) return "bottom";
+  return "middle";
+}
+
+export function hasBoardPair(hole: [Card, Card], board: Card[]): boolean {
+  return getBoardPairType(hole, board) !== null;
+}
+
 function hasMadeHand(hole: [Card, Card], board: Card[]): boolean {
   const all = [...hole, ...board];
   const rankCounts = new Map<string, number>();
@@ -83,6 +115,7 @@ function hasMadeHand(hole: [Card, Card], board: Card[]): boolean {
   if (maxSuitCount >= 5 || maxRankCount >= 4) return true;
   if (maxRankCount === 3) return true;
   if (hasTopPair(hole, board)) return true;
+  if (hasBoardPair(hole, board)) return true;
 
   const holeRanks = hole.map((c) => c.rank);
   const hasTwoPair =
@@ -118,7 +151,6 @@ export function evaluateHandStrength(
   if (maxRankCount >= 4) return "monster";
   if (maxRankCount === 3) return "strong";
 
-  const holeRanks = hole.map((c) => c.rank);
   const topPair = hasTopPair(hole, board);
 
   if (topPair && maxRankCount === 2) {
@@ -131,6 +163,11 @@ export function evaluateHandStrength(
     return "strong";
   }
 
+  const pairType = getBoardPairType(hole, board);
+  if (pairType === "middle" || pairType === "bottom") {
+    return "marginal";
+  }
+
   const outs = countOuts(hole, board);
   if (outs >= 8) return "draw";
   if (outs >= 4) return "draw";
@@ -138,14 +175,6 @@ export function evaluateHandStrength(
   const hasAce = hole.some((c) => c.rank === "A");
   const boardHasAce = board.some((c) => c.rank === "A");
   if (hasAce && !boardHasAce && !hasMadeHand(hole, board)) return "weak";
-
-  // Deuxième paire (paire avec une carte non-top du board) → marginal
-  if (
-    maxRankCount === 2 &&
-    holeRanks.some((r) => board.some((c) => c.rank === r))
-  ) {
-    return "marginal";
-  }
 
   return "air";
 }
