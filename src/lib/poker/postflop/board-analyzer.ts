@@ -139,11 +139,12 @@ export function evaluateHandStrength(
   const boardHasAce = board.some((c) => c.rank === "A");
   if (hasAce && !boardHasAce && !hasMadeHand(hole, board)) return "weak";
 
+  // Deuxième paire (paire avec une carte non-top du board) → marginal
   if (
     maxRankCount === 2 &&
     holeRanks.some((r) => board.some((c) => c.rank === r))
   ) {
-    return "weak";
+    return "marginal";
   }
 
   return "air";

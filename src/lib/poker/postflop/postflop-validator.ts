@@ -1,11 +1,7 @@
 import { Scenario, UserAction } from "../types";
 import { countOuts, equityFromOuts } from "./outs-calculator";
 import { isProfitableCall, potOddsPercent } from "./pot-odds";
-import {
-  evaluateHandStrength,
-  isDangerousBoard,
-  isDryBoard,
-} from "./board-analyzer";
+import { evaluateHandStrength, isDryBoard } from "./board-analyzer";
 
 export interface PostflopValidation {
   correctActions: UserAction[];
@@ -29,6 +25,14 @@ export function isFacingVillainBet(scenario: Scenario): boolean {
   );
 }
 
+export function isStandardVillainBet(scenario: Scenario): boolean {
+  return (
+    scenario.facingAction === "bet" ||
+    scenario.facingAction === "bet_third" ||
+    scenario.facingAction === "bet_half"
+  );
+}
+
 /** Face à une mise adverse : jamais de bet en réponse. */
 export function sanitizeActionsForFacingBet(
   actions: UserAction[],
@@ -38,11 +42,11 @@ export function sanitizeActionsForFacingBet(
   return actions.filter((a) => !BET_ACTIONS.includes(a));
 }
 
-function isAirHand(
-  strength: ReturnType<typeof evaluateHandStrength>,
-  outs: number
+/** Air ou hauteur faible sans paire faite — pas un bluff-catcher. */
+function isAirOrWeakHand(
+  strength: ReturnType<typeof evaluateHandStrength>
 ): boolean {
-  return strength === "air" || (strength === "weak" && outs === 0);
+  return strength === "air" || strength === "weak";
 }
 
 export function validatePostflopAction(scenario: Scenario): PostflopValidation {
@@ -54,6 +58,7 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
   const equity = equityFromOuts(outs, street);
   const potOdds = potOddsPercent(scenario.callAmountBB, scenario.potBB);
   const facingBet = isFacingVillainBet(scenario);
+  const standardBet = isStandardVillainBet(scenario);
 
   const details = { outs, equity, potOdds, strength };
 
@@ -66,7 +71,8 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
     details,
   });
 
-  if (isAirHand(strength, outs) && facingBet) {
+  // Air / weak (rien, hauteur As) face à une mise → Fold
+  if (isAirOrWeakHand(strength) && facingBet) {
     return finish(["fold"], "postflop_air_fold");
   }
 
@@ -74,6 +80,7 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
     if (
       strength === "monster" ||
       strength === "strong" ||
+      strength === "marginal" ||
       (outs >= 8 && equity > potOdds)
     ) {
       return finish(["call"], "postflop_call_allin");
@@ -81,10 +88,8 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
     return finish(["fold"], "postflop_fold_allin");
   }
 
-  if (facingBet && strength === "marginal") {
-    if (isDangerousBoard(board)) {
-      return finish(["fold"], "postflop_marginal_fold");
-    }
+  // Marginal (top paire bluff-catcher, 2e paire) face à mise standard → Call
+  if (facingBet && strength === "marginal" && standardBet) {
     return finish(["call"], "postflop_marginal_call");
   }
 
@@ -100,7 +105,10 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
       if (strength === "monster" || strength === "strong") {
         return finish(["call", "raise_6bb"], "postflop_value_raise");
       }
-      return finish(["fold"], "postflop_marginal_fold");
+      if (strength === "marginal") {
+        return finish(["call"], "postflop_marginal_call");
+      }
+      return finish(["fold"], "postflop_air_fold");
     }
     return finish(["bet_half"], "postflop_value_bet");
   }
@@ -115,7 +123,7 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
     return finish(["check"], "postflop_draw_check");
   }
 
-  if (isAirHand(strength, outs) || strength === "weak") {
+  if (isAirOrWeakHand(strength)) {
     if (facingBet) {
       return finish(["fold"], "postflop_air_fold");
     }
@@ -139,6 +147,10 @@ export function validatePostflopAction(scenario: Scenario): PostflopValidation {
 
   if (facingBet && (strength === "monster" || strength === "strong")) {
     return finish(["call", "raise_6bb"], "postflop_value_raise");
+  }
+
+  if (facingBet && strength === "marginal") {
+    return finish(["call"], "postflop_marginal_call");
   }
 
   if (outs >= 4 && facingBet) {

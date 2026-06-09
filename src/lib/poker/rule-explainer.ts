@@ -111,10 +111,8 @@ export function explainPostflop(
       return `Tu n'as qu'une hauteur ou rien (${strength}). L'adversaire montre de la résistance — Check/Fold, pas de bluff contre une Calling Station. Action correcte → ${actions}.`;
     case "postflop_air_check":
       return `Pas de main faite. Checker gratuitement. Action correcte → ${actions}.`;
-    case "postflop_marginal_fold":
-      return `Top pair kicker faible sur board dangereux (${strength}). Bluff-catcher trop vulnérable — pas de relance ni de mise, abandonne face à la résistance. Action correcte → ${actions}.`;
     case "postflop_marginal_call":
-      return `Main marginale (${strength}) — bluff-catcher possible face à une petite mise, mais jamais de Bet/Raise. Action correcte → ${actions}.`;
+      return `Avec une main marginale ou un bluff-catcher décent (top paire, deuxième paire — ${strength}), l'action correcte est de payer (Call) face à une mise standard (1/3 ou 1/2 pot) en HU. Pot control : ne pas fold une paire sur une seule relance. Action correcte → ${actions}.`;
     case "postflop_value_raise":
       return `Main forte (${strength}) face à une mise — tu peux payer ou relancer pour valoriser. Action correcte → ${actions}.`;
     default:

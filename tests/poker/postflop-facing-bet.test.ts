@@ -74,10 +74,11 @@ describe("A6 top pair weak kicker on dangerous turn board", () => {
     expect(evaluateHandStrength(HOLE_A6, BOARD_TURN)).not.toBe("strong");
   });
 
-  it("recommends fold (not bet) facing villain bet", () => {
+  it("recommends call (bluff-catch) facing standard bet, never bet", () => {
     const result = validatePostflopAction(a6FacingBetScenario());
     assertNoBetActionsWhenFacingBet(result.correctActions);
-    expect(result.correctActions).toContain("fold");
+    expect(result.correctActions).toEqual(["call"]);
+    expect(result.ruleRef).toBe("postflop_marginal_call");
     expect(result.correctActions).not.toContain("bet_half");
     expect(result.correctActions).not.toContain("bet_third");
   });
