@@ -45,23 +45,52 @@ function randomPosition(playerCount: PlayerCount): Position {
   return "BB";
 }
 
+function recreationalShortStackVillainHU(
+  stackBB: number
+): {
+  history: ActionEvent[];
+  isFirstToAct: boolean;
+  facingAction: ActionEvent["action"] | null;
+  callAmountBB: number;
+} {
+  const r = Math.random();
+  if (r < 0.35) {
+    return {
+      history: [{ actor: "villain", action: "allin", amountBB: stackBB - 1 }],
+      isFirstToAct: false,
+      facingAction: "allin",
+      callAmountBB: stackBB - 2,
+    };
+  }
+  if (r < 0.7) {
+    return {
+      history: [{ actor: "villain", action: "raise_2bb", amountBB: 2 }],
+      isFirstToAct: false,
+      facingAction: "raise_2bb",
+      callAmountBB: 1,
+    };
+  }
+  return {
+    history: [{ actor: "villain", action: "limp" }],
+    isFirstToAct: true,
+    facingAction: "limp",
+    callAmountBB: 0,
+  };
+}
+
 function buildPreflopHistory(
   position: Position,
   effectivePosition: Position,
   playerCount: PlayerCount,
-  strategyMode: Scenario["strategyMode"]
+  strategyMode: Scenario["strategyMode"],
+  stackBB: number
 ): { history: ActionEvent[]; isFirstToAct: boolean; facingAction: ActionEvent["action"] | null; callAmountBB: number } {
   if (playerCount === "headsUp") {
     if (position === "BTN") {
       return { history: [], isFirstToAct: true, facingAction: null, callAmountBB: 0 };
     }
     if (strategyMode === "push_fold" || strategyMode === "hu_survival") {
-      return {
-        history: [{ actor: "villain", action: "allin", amountBB: 8 }],
-        isFirstToAct: false,
-        facingAction: "allin",
-        callAmountBB: 7,
-      };
+      return recreationalShortStackVillainHU(stackBB);
     }
     return {
       history: [{ actor: "villain", action: "raise_2bb", amountBB: 2 }],
@@ -104,11 +133,38 @@ function buildPreflopHistory(
   // BB
   const r = Math.random();
   if (strategyMode === "push_fold") {
+    if (r < 0.35) {
+      return {
+        history: [{ actor: "villain", action: "allin", amountBB: stackBB - 1 }],
+        isFirstToAct: false,
+        facingAction: "allin",
+        callAmountBB: stackBB - 2,
+      };
+    }
+    if (r < 0.6) {
+      return {
+        history: [
+          { actor: "BTN", action: "raise_2bb", amountBB: 2 },
+          { actor: "SB", action: "fold" },
+        ],
+        isFirstToAct: false,
+        facingAction: "raise_2bb",
+        callAmountBB: 1,
+      };
+    }
+    if (r < 0.8) {
+      return {
+        history: [{ actor: "BTN", action: "limp" }, { actor: "SB", action: "fold" }],
+        isFirstToAct: true,
+        facingAction: "limp",
+        callAmountBB: 0,
+      };
+    }
     return {
-      history: [{ actor: "villain", action: "allin", amountBB: 6 }],
-      isFirstToAct: false,
-      facingAction: "allin",
-      callAmountBB: 5,
+      history: [{ actor: "SB", action: "limp" }, { actor: "BTN", action: "fold" }],
+      isFirstToAct: true,
+      facingAction: "limp",
+      callAmountBB: 0,
     };
   }
   if (r < 0.5) {
@@ -375,7 +431,8 @@ function generatePreflopScenario(forcePreflop = false): Scenario {
     position,
     effectivePosition,
     playerCount,
-    "standard"
+    "standard",
+    stackBB
   );
 
   const strategyMode = resolveStrategyMode(
@@ -387,7 +444,13 @@ function generatePreflopScenario(forcePreflop = false): Scenario {
   );
 
   if (strategyMode !== "standard") {
-    const rebuilt = buildPreflopHistory(position, effectivePosition, playerCount, strategyMode);
+    const rebuilt = buildPreflopHistory(
+      position,
+      effectivePosition,
+      playerCount,
+      strategyMode,
+      stackBB
+    );
     history = rebuilt.history;
     isFirstToAct = rebuilt.isFirstToAct;
     facingAction = rebuilt.facingAction;

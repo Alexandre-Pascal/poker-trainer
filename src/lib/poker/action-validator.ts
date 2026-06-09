@@ -11,9 +11,14 @@ import {
 } from "./postflop/postflop-validator";
 import {
   explainPostflop,
+  explainPotCommitted,
   explainPreflop,
   explainWrongAction,
 } from "./rule-explainer";
+import {
+  isPotCommittedPreflopSpot,
+  resolvePotCommittedCorrectActions,
+} from "./pot-committed";
 
 function actionsMatch(user: UserAction, correct: UserAction[]): boolean {
   if (correct.includes(user)) return true;
@@ -54,6 +59,22 @@ export function validateAction(
     scenario.holeCards[1].rank,
     scenario.holeCards[0].suit === scenario.holeCards[1].suit
   );
+
+  if (isPotCommittedPreflopSpot(scenario)) {
+    const correctActions = resolvePotCommittedCorrectActions(hand);
+    const inRange = correctActions.includes("allin");
+    const explanation = explainPotCommitted(scenario, hand, inRange);
+    const isCorrect = actionsMatch(userAction, correctActions);
+
+    return {
+      isCorrect,
+      correctActions,
+      explanation: isCorrect
+        ? explanation
+        : explainWrongAction(scenario, userAction, correctActions, explanation),
+      ruleRef: "pot_committed_defense",
+    };
+  }
 
   const rule = findRangeRule(
     scenario.effectivePosition,
@@ -111,6 +132,10 @@ export function resolveCorrectActions(scenario: Scenario): UserAction[] {
     scenario.holeCards[1].rank,
     scenario.holeCards[0].suit === scenario.holeCards[1].suit
   );
+
+  if (isPotCommittedPreflopSpot(scenario)) {
+    return resolvePotCommittedCorrectActions(hand);
+  }
 
   const rule = findRangeRule(
     scenario.effectivePosition,

@@ -18,6 +18,20 @@ const ACTION_LABELS: Record<UserAction, string> = {
   raise_6bb: "Raise 6 BB",
 };
 
+export function explainPotCommitted(
+  scenario: Scenario,
+  hand: ParsedHand,
+  inRange: boolean
+): string {
+  const handStr = handToNotation(hand);
+  const actions = inRange ? "All-in" : "Fold";
+  const rangeHint = inRange
+    ? `${handStr} est dans la range de survie (55+, A9o+, A2s+, KJo+, KTs+).`
+    : `${handStr} n'est pas dans la range de survie.`;
+
+  return `L'adversaire fait une petite relance avec un micro-tapis, il est engagé dans le pot (Pot-Committed). Traite cela comme un Tapis direct. ${rangeHint} Action : All-in avec ta range de survie, ou Fold. Action correcte → ${actions}.`;
+}
+
 export function explainPreflop(
   scenario: Scenario,
   hand: ParsedHand,
